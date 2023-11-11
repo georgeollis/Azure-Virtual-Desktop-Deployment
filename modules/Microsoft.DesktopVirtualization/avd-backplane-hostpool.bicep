@@ -138,8 +138,6 @@ resource workspace 'Microsoft.DesktopVirtualization/workspaces@2022-09-09' = {
   }
 }
 
-
-
 module role 'avd-backplane-roleassignment.bicep' = [for (item, index) in applicationGroupPropeties: if (item.?principals != null) {
   name: guid('role-assignment-${item.name}-${item.applicationGroupType}')
   params: {
