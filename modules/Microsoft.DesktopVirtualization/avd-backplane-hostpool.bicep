@@ -128,6 +128,17 @@ resource appg 'Microsoft.DesktopVirtualization/applicationGroups@2023-09-05' = [
   location: applicationGroup.deploymentLocation
 }] 
 
+resource workspace 'Microsoft.DesktopVirtualization/workspaces@2022-09-09' = {
+  name: 'workspace-01'
+  location: deploymentLocation
+  properties: {
+    friendlyName: friendlyName
+    description: description
+    applicationGroupReferences: [for (item, index) in applicationGroupPropeties : appg[index].id ]
+  }
+}
+
+
 
 module role 'avd-backplane-roleassignment.bicep' = [for (item, index) in applicationGroupPropeties: if (item.?principals != null) {
   name: guid('role-assignment-${item.name}-${item.applicationGroupType}')
@@ -151,5 +162,6 @@ output name string = hostpool.name
 @sys.description('The resource Id.')
 output id string = hostpool.id
 
-
-
+output applicationGroupIds array = [for (item, index) in applicationGroupPropeties : {
+  id: appg[index].id
+}]
