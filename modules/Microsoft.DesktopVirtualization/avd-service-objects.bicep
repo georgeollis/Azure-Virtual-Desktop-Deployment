@@ -110,7 +110,7 @@ resource workspace 'Microsoft.DesktopVirtualization/workspaces@2022-09-09' = {
   }
 }
 
-module role 'avd-backplane-roleassignment.bicep' = [for (item, index) in applicationGroupPropeties: if (item.?principals != null) {
+module role 'avd-access.bicep' = [for (item, index) in applicationGroupPropeties: if (item.?principals != null) {
   name: guid('role-assignment-${item.name}-${item.applicationGroupType}')
   params: {
     applicationGroupName: item.name
@@ -119,7 +119,7 @@ module role 'avd-backplane-roleassignment.bicep' = [for (item, index) in applica
   dependsOn: appg
 }]
 
-module apps 'azure_avd_application_group_applications.bicep' = [ for (item, index) in applicationGroupPropeties: if (item.applicationGroupType != 'Desktop') {
+module apps 'avd-applications.bicep' = [ for (item, index) in applicationGroupPropeties: if (item.applicationGroupType != 'Desktop') {
   name: 'deployment-${item.name}'
   params: {
      applicationGroupName: item.name
