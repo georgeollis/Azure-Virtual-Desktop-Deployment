@@ -2,10 +2,31 @@ targetScope = 'resourceGroup'
 
 @sys.description('Agent update type')
 type agentUpdateType = {
-  maintenanceWindows: ({ dayOfWeek: string, hour: int })[]?
+  maintenanceWindows: { dayOfWeek: string?, hour: int? }[]?
   type: string?
   maintenanceWindowTimeZone: string?
   useSessionHostLocalTime: bool?
+}
+
+type workspaceType = { 
+  name: string
+  description: string?
+  friendlyName: string?
+}
+
+type hostpoolType = {
+  name: string
+  agentUpdate: agentUpdateType?
+  hostPoolType: 'Personal' | 'Pooled'
+  loadBalancerType: 'BreadthFirst' | 'DepthFirst' | 'Persistent'
+  preferredAppGroupType: 'Desktop' | 'None' | 'RailApplications'
+  personalDesktopAssignmentType: 'Automatic' | 'Direct'?
+  startVMonConnect: bool?
+  maxSessionLimit: int?
+  friendlyName: string?
+  description: string?
+  customRdpProperty: string?
+  validationEnvironment: bool?
 }
 
 @sys.description('Application group type')
@@ -32,87 +53,38 @@ type applicationGroupType = {
   }[]?
 }[]
 
-@sys.description('The session host configuration for updating agent, monitoring agent, and stack component.')
-param agentUpdate agentUpdateType = {
-  useSessionHostLocalTime: true
-  type: 'Scheduled'
-  maintenanceWindows: [
-    {
-      dayOfWeek: 'Sunday'
-      hour: 20
-    }
-  ]
-}
-
-@sys.description('(Required) - Name of the hostPool.')
-param name string
-
-@sys.description('HostPool type for desktop.')
-@allowed([ 'Personal', 'Pooled' ])
-param hostPoolType string
-
-@sys.description('(Required) - 	The type of the load balancer.')
-@allowed([ 'BreadthFirst', 'DepthFirst', 'Persistent' ])
-param loadBalancerType string
-
-@sys.description('(Required) - The type of preferred application group type, default to Desktop Application Group')
-@allowed([
-  'Desktop'
-  'None'
-  'RailApplications'
-])
-param preferredAppGroupType string = 'Desktop'
-
-@sys.description('The geo-location where the resource lives')
+@sys.description('The location for deployed resources')
 param deploymentLocation string = resourceGroup().location
 
-@sys.description('PersonalDesktopAssignment type for HostPool.')
-@allowed([ 'Automatic', 'Direct', '' ])
-param personalDesktopAssignmentType string = ''
+param workspaceProperties workspaceType
 
-@sys.description('The flag to turn on/off StartVMOnConnect feature.')
-param startVMOnConnect bool = false
-
-@sys.description('The max session limit of HostPool.')
-param maxSessionLimit int?
-
-@sys.description('Friendly name of HostPool.')
-param friendlyName string?
-
-@sys.description('Description of HostPool.')
-param description string?
-
-@sys.description('Custom rdp property of HostPool.')
-param customRdpProperty string?
-
-@sys.description('Is validation environment.')
-param validationEnvironment bool = false
+param hostPoolProperties hostpoolType
 
 @sys.description('Application group object that will be assigned to the hostpool.')
 param applicationGroupPropeties applicationGroupType
 
 resource hostpool 'Microsoft.DesktopVirtualization/hostPools@2023-07-07-preview' = {
-  name: name
+  name: hostPoolProperties.name
   location: deploymentLocation
   properties: {
-    hostPoolType: hostPoolType
-    loadBalancerType: loadBalancerType
-    preferredAppGroupType: preferredAppGroupType
-    personalDesktopAssignmentType: any(personalDesktopAssignmentType)
-    startVMOnConnect: startVMOnConnect
-    maxSessionLimit: maxSessionLimit
-    friendlyName: friendlyName
-    description: description
-    customRdpProperty: customRdpProperty
-    validationEnvironment: validationEnvironment
-    agentUpdate: {
-      maintenanceWindows: [for window in agentUpdate.maintenanceWindows: {
-        dayOfWeek: window.dayOfWeek
-        hour: window.hour
+    hostPoolType: hostPoolProperties.hostPoolType
+    loadBalancerType: hostPoolProperties.loadBalancerType
+    preferredAppGroupType: hostPoolProperties.?preferredAppGroupType ?? 'Desktop'
+    personalDesktopAssignmentType: any(hostPoolProperties.?personalDesktopAssignmentType)
+    startVMOnConnect: hostPoolProperties.?startVMonConnect ?? false
+    maxSessionLimit: hostPoolProperties.?maxSessionLimit
+    friendlyName: hostPoolProperties.?friendlyName
+    description: hostPoolProperties.?description
+    customRdpProperty: hostPoolProperties.?customRdpProperty
+    validationEnvironment: hostPoolProperties.?validationEnvironment ?? false
+    agentUpdate:  {
+      maintenanceWindows: [for window in any(hostPoolProperties.agentUpdate.?maintenanceWindows): {
+        dayOfWeek: window.?dayOfWeek 
+        hour: window.?hour
       }]
-      maintenanceWindowTimeZone: agentUpdate.useSessionHostLocalTime == false ? agentUpdate.maintenanceWindowTimeZone : null
-      type: agentUpdate.type
-      useSessionHostLocalTime: agentUpdate.useSessionHostLocalTime
+       maintenanceWindowTimeZone: hostPoolProperties.agentUpdate.?maintenanceWindowTimeZone
+       type: hostPoolProperties.agentUpdate.?type ?? 'Default'
+       useSessionHostLocalTime: hostPoolProperties.agentUpdate.?useSessionHostLocalTime ?? true
     }
   }
 }
@@ -129,11 +101,11 @@ resource appg 'Microsoft.DesktopVirtualization/applicationGroups@2023-09-05' = [
 }] 
 
 resource workspace 'Microsoft.DesktopVirtualization/workspaces@2022-09-09' = {
-  name: 'workspace-01'
+  name: workspaceProperties.name
   location: deploymentLocation
   properties: {
-    friendlyName: friendlyName
-    description: description
+    friendlyName: workspaceProperties.?friendlyName
+    description: workspaceProperties.?description
     applicationGroupReferences: [for (item, index) in applicationGroupPropeties : appg[index].id ]
   }
 }
@@ -144,8 +116,8 @@ module role 'avd-backplane-roleassignment.bicep' = [for (item, index) in applica
     applicationGroupName: item.name
     principals: any(item.?principals)
   }
+  dependsOn: appg
 }]
-
 
 module apps 'azure_avd_application_group_applications.bicep' = [ for (item, index) in applicationGroupPropeties: if (item.applicationGroupType != 'Desktop') {
   name: 'deployment-${item.name}'
@@ -153,6 +125,7 @@ module apps 'azure_avd_application_group_applications.bicep' = [ for (item, inde
      applicationGroupName: item.name
      applications: any(item.?applications)
   }
+  dependsOn: appg
 }]
 
 @sys.description('The name of the resource')

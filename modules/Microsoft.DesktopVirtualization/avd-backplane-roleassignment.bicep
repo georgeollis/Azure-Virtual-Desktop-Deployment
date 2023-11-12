@@ -8,7 +8,7 @@ resource applicationGroup 'Microsoft.DesktopVirtualization/applicationGroups@202
 }
 
 resource roleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = [ for principal in principals : {
-  name: guid('${applicationGroupName}-role-assignment-${principal}')
+  name: guid(uniqueString('${applicationGroupName}-role-assignment-${principal}'))
   properties: {
     principalId: principal
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '1d18fff3-a72a-46b5-b4a9-0b38a3cd7e63') // Desktop Virtualization User 
