@@ -78,32 +78,20 @@ resource computeGallery 'Microsoft.Compute/galleries@2020-09-30' = {
   }
 }
 
-resource image 'Microsoft.Compute/galleries/images@2022-03-03' = [ for (item, index) in imageDefinitionObject : if (deployImageDefinition) {
-  name: imageDefinitionObject[index].name
-  location: deploymentLocation
-  parent: computeGallery
-  properties: {
-    architecture: imageDefinitionObject[index].architecture
-    description: imageDefinitionObject[index].?description
-    endOfLifeDate: imageDefinitionObject[index].?endOfLifeDate
-    eula: imageDefinitionObject[index].?eula
-    hyperVGeneration: imageDefinitionObject[index].hyperVGeneration
-    identifier: {
-      offer: imageDefinitionObject[index].identifier.offer
-      publisher: imageDefinitionObject[index].identifier.publisher
-      sku: imageDefinitionObject[index].identifier.sku
-    }
-    osState: imageDefinitionObject[index].osState
-    osType: imageDefinitionObject[index].osType
+module imageDefinition 'avd-compute-gallery-image.bicep' = if (deployImageDefinition) {
+  name: 'avd-deployment-image-defintion'
+  params: {
+    computeGalleryName: computeGallery.name
+    deploymentLocation: computeGallery.location
+    imageDefinitionObject: imageDefinitionObject
   }
-}]
+}
 
-resource applications 'Microsoft.Compute/galleries/applications@2022-03-03' =[ for (item, index) in computeGalleryApplicationObject : if(deployApplicationDefinition) {
-  name: computeGalleryApplicationObject[index].name
-  location: deploymentLocation
-  parent: computeGallery
-  properties: {
-    supportedOSType: computeGalleryApplicationObject[index].supportedOsType
-    description: computeGalleryApplicationObject[index].?description
+module applicationDefinition 'avd-compute-gallery-application.bicep' = if (deployApplicationDefinition) {
+  name: 'avd-deployment-application-definition'
+  params: {
+    computeGalleryName: computeGallery.name
+    computeGalleryApplicationObject: computeGalleryApplicationObject
+    deploymentLocation: computeGallery.location
   }
-}]
+}
