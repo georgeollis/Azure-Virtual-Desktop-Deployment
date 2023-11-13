@@ -29,6 +29,13 @@ param computeGalleryObject computeGalleryType = {
   name: 'computegallis01'
 }
 
+type computeGalleryApplicationsType = {
+  name: string
+  supportedOsType: 'Windows' | 'Linux'
+  description: string?
+}[]
+
+
 @description('Properties for the image definition.')
 param imageDefinitionObject imageDefinitionType = [
   {
@@ -45,7 +52,23 @@ param imageDefinitionObject imageDefinitionType = [
   }
 ]
 
+@description('Properties for compute gallery applications.')
+param computeGalleryApplicationObject computeGalleryApplicationsType = [
+   {
+    name: 'Google-Chrone'
+    supportedOsType: 'Windows'
+   }
+   {
+    name: 'Notepad'
+    supportedOsType: 'Windows'
+   }
+]
+
 param deploymentLocation string = resourceGroup().location
+
+param deployImageDefinition bool = true
+
+param deployApplicationDefinition bool = true
 
 resource computeGallery 'Microsoft.Compute/galleries@2020-09-30' = {
   name: computeGalleryObject.name
@@ -55,7 +78,7 @@ resource computeGallery 'Microsoft.Compute/galleries@2020-09-30' = {
   }
 }
 
-resource image 'Microsoft.Compute/galleries/images@2022-03-03' = [ for (item, index) in imageDefinitionObject : {
+resource image 'Microsoft.Compute/galleries/images@2022-03-03' = [ for (item, index) in imageDefinitionObject : if (deployImageDefinition) {
   name: imageDefinitionObject[index].name
   location: deploymentLocation
   parent: computeGallery
@@ -72,5 +95,15 @@ resource image 'Microsoft.Compute/galleries/images@2022-03-03' = [ for (item, in
     }
     osState: imageDefinitionObject[index].osState
     osType: imageDefinitionObject[index].osType
+  }
+}]
+
+resource applications 'Microsoft.Compute/galleries/applications@2022-03-03' =[ for (item, index) in computeGalleryApplicationObject : if(deployApplicationDefinition) {
+  name: computeGalleryApplicationObject[index].name
+  location: deploymentLocation
+  parent: computeGallery
+  properties: {
+    supportedOSType: computeGalleryApplicationObject[index].supportedOsType
+    description: computeGalleryApplicationObject[index].?description
   }
 }]
