@@ -41,23 +41,30 @@ param virtualNetworkProperties virtualNetworkType
 
 @description('Domain join properties. Required if enableDomainJoin is true')
 param domainJoinProperties domainJoinType?
+
 @description('Join session hosts to domain?')
 param enableDomainJoin bool = false
 
 @description('(Optional) - Should the Azure Monitor Agent (AMA) be installed?')
 param enableAMA bool = false
 
+@description('(Optional) - Should session hosts be added to Microsoft Entra ID?')
+param enableEntraJoin bool = false
+
 @description('How many session hosts should be deployed?')
 param instances int = 1
 
-// @description('The name of the hostPool resource session hosts should join.')
-// param hostPoolName string
+@description('How many sessions hosts are already deployed?')
+param currentInstances int = 0
+
+@description('The name of the hostPool resource session hosts should join.')
+param hostPoolName string
+
+@description('Name of resource group containing AVD HostPool')
+param hostPoolResourceGroupName string
 
 @description('Location for all standard resources to be deployed into.')
 param location string = resourceGroup().location
-
-// @description('Name of resource group containing AVD HostPool')
-// param resourceGroupName string
 
 param vmPrefix string
 
@@ -91,7 +98,7 @@ resource subnet 'Microsoft.Network/virtualNetworks/subnets@2023-05-01' existing 
 }
 
 resource nic 'Microsoft.Network/networkInterfaces@2021-05-01' = [for i in range(0, instances): {
-  name: '${vmPrefix}-${i}-nic'
+  name: '${vmPrefix}-${i + currentInstances}-nic'
   location: location
   tags: tags
   properties: {
@@ -110,7 +117,7 @@ resource nic 'Microsoft.Network/networkInterfaces@2021-05-01' = [for i in range(
 }]
 
 resource vm 'Microsoft.Compute/virtualMachines@2021-11-01' = [for i in range(0, instances): {
-  name: '${vmPrefix}-${i}'
+  name: '${vmPrefix}-${i + currentInstances}'
   location: location
   identity: {
     type: 'SystemAssigned'
@@ -169,7 +176,7 @@ resource vm 'Microsoft.Compute/virtualMachines@2021-11-01' = [for i in range(0, 
 }]
 
 resource joindomain 'Microsoft.Compute/virtualMachines/extensions@2021-11-01' = [for i in range(0, instances): if (enableDomainJoin) {
-  name: '${vmPrefix}-${i}/joindomain'
+  name: '${vmPrefix}-${i + currentInstances}/joindomain'
   location: location
   properties: {
     publisher: 'Microsoft.Compute'
@@ -196,7 +203,7 @@ resource joindomain 'Microsoft.Compute/virtualMachines/extensions@2021-11-01' = 
 }]
 
 resource amaagent 'Microsoft.Compute/virtualMachines/extensions@2021-11-01' = [for i in range(0, instances): if (enableAMA) {
-  name: '${vmPrefix}-${i}/ama-agent'
+  name: '${vmPrefix}-${i + currentInstances}/ama-agent'
   location: location
   properties: {
     publisher: 'Microsoft.Azure.Monitor'
@@ -210,25 +217,36 @@ resource amaagent 'Microsoft.Compute/virtualMachines/extensions@2021-11-01' = [f
   ]
 }]
 
-// resource dscextension 'Microsoft.Compute/virtualMachines/extensions@2021-11-01' = [for i in range(0, instances): {
-//   name: '${vmPrefix}-${i + instances}/dscextension'
-//   location: location
-//   properties: {
-//     publisher: 'Microsoft.Powershell'
-//     type: 'DSC'
-//     typeHandlerVersion: '2.73'
-//     autoUpgradeMinorVersion: true
-//     settings: {
-//       modulesUrl: 'https://wvdportalstorageblob.blob.core.windows.net/galleryartifacts/Configuration_09-08-2022.zip'
-//       configurationFunction: 'Configuration.ps1\\AddSessionHost'
-//       properties: {
-//         HostPoolName: hostPoolName
-//         ResourceGroup: resourceGroupName
-//       }
-//     }
-//   }
-//   dependsOn: [
-//     vm[i]
-//     joindomain[i]
-//   ]
-// }]
+resource entraJoin 'Microsoft.Compute/virtualMachines/extensions@2023-07-01' = [for i in range(0, instances): if (enableEntraJoin) {
+  name: '${vmPrefix}-${i + currentInstances}/entraJoin'
+  location: location
+  properties:{
+    publisher: 'Microsoft.Azure.ActiveDirectory'
+    type: 'AADLoginForWindows'
+    typeHandlerVersion: '1.0'
+    autoUpgradeMinorVersion: true
+  } 
+}]
+
+resource dscextension 'Microsoft.Compute/virtualMachines/extensions@2021-11-01' = [for i in range(0, instances): {
+  name: '${vmPrefix}-${i + currentInstances}/dscextension'
+  location: location
+  properties: {
+    publisher: 'Microsoft.Powershell'
+    type: 'DSC'
+    typeHandlerVersion: '2.73'
+    autoUpgradeMinorVersion: true
+    settings: {
+      modulesUrl: 'https://wvdportalstorageblob.blob.core.windows.net/galleryartifacts/Configuration_09-08-2022.zip'
+      configurationFunction: 'Configuration.ps1\\AddSessionHost'
+      properties: {
+        HostPoolName: hostPoolName
+        ResourceGroup: hostPoolResourceGroupName
+      }
+    }
+  }
+  dependsOn: [
+    vm[i]
+    joindomain[i]
+  ]
+}]
