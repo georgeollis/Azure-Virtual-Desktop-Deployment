@@ -77,3 +77,6 @@ module applicationDefinition 'avd-compute-gallery-application.bicep' = if (deplo
     deploymentLocation: computeGallery.location
   }
 }
+
+output computeGalleryName string = computeGallery.name
+output computeGalleryId string = computeGallery.id

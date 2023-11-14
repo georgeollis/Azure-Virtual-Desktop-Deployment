@@ -20,3 +20,8 @@ module avd_shared_services '../../modules/Microsoft.DesktopVirtualization/avd-co
     tags: tags
   }
 }]
+
+output avd_shared_services array = [for (item, index) in computeGalleryObjects: {
+  computeGalleryName: avd_shared_services[index].outputs.computeGalleryName
+  computeGalleryId: avd_shared_services[index].outputs.computeGalleryId
+} ]
