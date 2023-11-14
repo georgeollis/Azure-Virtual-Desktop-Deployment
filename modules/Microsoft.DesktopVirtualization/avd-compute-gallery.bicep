@@ -24,45 +24,20 @@ type imageDefinitionType = {
 
 }[]
 
-@description('Properties for the Azure Compute Gallery')
-param computeGalleryObject computeGalleryType = {
-  name: 'computegallis01'
-}
-
 type computeGalleryApplicationsType = {
   name: string
   supportedOsType: 'Windows' | 'Linux'
   description: string?
 }[]
 
+@description('Properties for the Azure Compute Gallery')
+param computeGalleryObject computeGalleryType
 
 @description('Properties for the image definition.')
-param imageDefinitionObject imageDefinitionType = [
-  {
-    name: 'windows-vm'
-    architecture: 'x64'
-    hyperVGeneration: 'V2'
-    identifier: {
-      offer: 'Gollis'
-      publisher: 'Gollis'
-      sku: 'Gollis'
-    }
-    osState: 'Generalized'
-    osType: 'Windows'
-  }
-]
+param imageDefinitionObject imageDefinitionType
 
 @description('Properties for compute gallery applications.')
-param computeGalleryApplicationObject computeGalleryApplicationsType = [
-   {
-    name: 'Google-Chrone'
-    supportedOsType: 'Windows'
-   }
-   {
-    name: 'Notepad'
-    supportedOsType: 'Windows'
-   }
-]
+param computeGalleryApplicationObject computeGalleryApplicationsType
 
 param deploymentLocation string = resourceGroup().location
 
