@@ -30,7 +30,6 @@ module avd_shared_services '../../modules/Microsoft.DesktopVirtualization/avd-co
   scope: resourceGroup
 }]
 
-
 output resourceGroupName string = resourceGroup.name
 output resourceGroupId string = resourceGroup.id
 output deploymentLocation string = deploymentLocation
