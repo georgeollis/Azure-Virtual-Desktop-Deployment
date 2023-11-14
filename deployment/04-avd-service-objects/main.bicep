@@ -39,8 +39,8 @@ var serviceObjects = [
   }
 ]
 
-module so '../../modules/Microsoft.DesktopVirtualization/avd-service-objects.bicep' = [for service in serviceObjects: {
-  name: 'deploy-avd-${service.workspaceProperties.name}'
+module avd_service_objects '../../modules/Microsoft.DesktopVirtualization/avd-service-objects.bicep' = [for (service, index) in serviceObjects: {
+  name: 'deploy-avd-service-objects-${index}'
   params: {
     workspaceProperties: service.workspaceProperties
     hostPoolProperties: service.hostPoolProperties
@@ -55,10 +55,10 @@ output resourceGroupId string = resourceGroup().id
 output deploymentLocation string = deploymentLocation
 
 output serviceObjects array = [for (item, index) in serviceObjects: {
-  workspaceName: so[index].outputs.workspaceName
-  workspaceId: so[index].outputs.workspaceId
-  hostPoolName: so[index].outputs.hostPoolName
-  hostPoolId: so[index].outputs.hostPoolId
-  applicationGroupNames: so[index].outputs.applicationGroupNames
-  applicationGroupIds: so[index].outputs.applicationGroupIds
+  workspaceName: avd_service_objects[index].outputs.workspaceName
+  workspaceId: avd_service_objects[index].outputs.workspaceId
+  hostPoolName: avd_service_objects[index].outputs.hostPoolName
+  hostPoolId: avd_service_objects[index].outputs.hostPoolId
+  applicationGroupNames: avd_service_objects[index].outputs.applicationGroupNames
+  applicationGroupIds: avd_service_objects[index].outputs.applicationGroupIds
 }]

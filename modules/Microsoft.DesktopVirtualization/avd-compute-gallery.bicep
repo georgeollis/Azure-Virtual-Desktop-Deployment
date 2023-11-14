@@ -34,10 +34,10 @@ type computeGalleryApplicationsType = {
 param computeGalleryObject computeGalleryType
 
 @description('Properties for the image definition.')
-param imageDefinitionObject imageDefinitionType
+param imageDefinitionObject imageDefinitionType?
 
 @description('Properties for compute gallery applications.')
-param computeGalleryApplicationObject computeGalleryApplicationsType
+param computeGalleryApplicationObject computeGalleryApplicationsType?
 
 @description('(Optional) - The location of the resource being deployed. Defaults to the resource group location')
 param deploymentLocation string = resourceGroup().location
@@ -48,9 +48,13 @@ param deployImageDefinition bool = false
 @description('(Optional) - Should an application definition resource be created within the Azure Compute Gallery? Defaults to false. If required, ensure that computeGalleryApplicationObject has been populated.')
 param deployApplicationDefinition bool = false
 
+@description('Tags on resources. Metadata.')
+param tags object? 
+
 resource computeGallery 'Microsoft.Compute/galleries@2020-09-30' = {
   name: computeGalleryObject.name
   location: deploymentLocation
+  tags: tags
   properties: {
     description: computeGalleryObject.?description
   }
