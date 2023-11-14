@@ -197,3 +197,12 @@ resource applicationGroupDiagnostics 'Microsoft.Insights/diagnosticSettings@2021
 output applicationGroupIds array = [for (item, index) in applicationGroupPropeties : {
   id: appg[index].id
 }]
+
+output applicationGroupNames array = [for (item, index) in applicationGroupPropeties : {
+  id: appg[index].name
+}]
+
+output hostPoolName string = hostpool.name
+output hostPoolId string = hostpool.id
+output workspaceName string = workspace.name
+output workspaceId string = workspace.id
