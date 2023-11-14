@@ -21,8 +21,8 @@ type virtualNetworkType = {
 }
 
 type computeGalleryType = {
-  @description('Subscription containing the Shared Image Gallery')
-  subscriptionId: string
+  // @description('Subscription containing the Shared Image Gallery')
+  // subscriptionId: string
   @description('Resource Group containing the Shared Image Gallery.')
   resourceGroup: string
   @description('Name of the existing Shared Image Gallery to be used for image.')
@@ -70,7 +70,7 @@ param hostPoolResourceGroupName string
 
 @description('(Optional) - Location for all standard resources to be deployed into.')
 param deploymentLocation string = resourceGroup().location
- 
+
 @description('(Optional) - What prefix should session host resources have.')
 param vmPrefix string = 'avd'
 
@@ -97,29 +97,38 @@ param adminUsername string = 'avdadmin'
 @secure()
 param adminPassword string
 
-param baseTime string = utcNow('u')
-
-var expirationTime = dateTimeAdd(baseTime, 'PT48H')
-
 // Get the hostPool Resource
 resource hostPool 'Microsoft.DesktopVirtualization/hostPools@2023-09-05' existing = {
   name: hostPoolName
   scope: resourceGroup(hostPoolResourceGroupName)
 }
 
-// Simply getting a token. Does not delete or modify hostPool in anyway.
-resource hostPoolRegistration 'Microsoft.DesktopVirtualization/hostPools@2023-09-05' = { 
-  name: hostPool.name
-  properties: {
+module token 'avd-hostpool-registration-token.bicep' = {
+  name: 'avd-hostpool-generate-token'
+  params: {
+    hostPoolName: hostPool.name
     hostPoolType: hostPool.properties.hostPoolType
-    loadBalancerType:  hostPool.properties.loadBalancerType
+    loadBalancerType: hostPool.properties.loadBalancerType
     preferredAppGroupType: hostPool.properties.preferredAppGroupType
-    registrationInfo: {
-      expirationTime: expirationTime
-      token: null
-      registrationTokenOperation: 'Update'
+    deploymentLocation: deploymentLocation
+  }
+  scope: resourceGroup(hostPoolResourceGroupName)
+}
+
+resource vmImage 'Microsoft.Compute/galleries@2022-03-03' existing = {
+  name: computeGalleryProperties.imageGalleryName
+  scope: resourceGroup(computeGalleryProperties.resourceGroup)
+  resource image 'images@2022-03-03' existing = {
+    name: computeGalleryProperties.imageGalleryDefintionName
+    resource version 'versions@2022-03-03' existing = {
+      name: computeGalleryProperties.imageGalleryVersionName
     }
   }
+}
+
+resource vmImageVersion 'Microsoft.Compute/galleries/images/versions@2022-03-03' existing = {
+  name: computeGalleryProperties.imageGalleryVersionName
+  parent: vmImage::image
 }
 
 resource virtualNetwork 'Microsoft.Network/virtualNetworks@2023-05-01' existing = {
@@ -191,7 +200,7 @@ resource vm 'Microsoft.Compute/virtualMachines@2021-11-01' = [for i in range(0, 
         } : null
       }
       imageReference: {
-        id: '/subscriptions/${computeGalleryProperties.subscriptionId}/resourceGroups/${computeGalleryProperties.resourceGroup}/providers/Microsoft.Compute/galleries/${computeGalleryProperties.imageGalleryName}/images/${computeGalleryProperties.imageGalleryDefintionName}/versions/${computeGalleryProperties.imageGalleryVersionName}'
+        id: resourceId('Microsoft.Compute/galleries/images/versions', '${vmImage.name}/${vmImage::image.name}/${vmImage::image::version.name}')
       }
       dataDisks: []
     }
@@ -254,12 +263,15 @@ resource sessionHostAzureMonitorAgent 'Microsoft.Compute/virtualMachines/extensi
 resource sessionHostEntraJoin 'Microsoft.Compute/virtualMachines/extensions@2023-07-01' = [for i in range(0, instances): if (enableEntraJoin) {
   name: '${vmPrefix}-${i + currentInstances}/entraJoin'
   location: deploymentLocation
-  properties:{
+  properties: {
     publisher: 'Microsoft.Azure.ActiveDirectory'
     type: 'AADLoginForWindows'
     typeHandlerVersion: '1.0'
     autoUpgradeMinorVersion: true
-  } 
+  }
+  dependsOn: [
+    vm[i]
+  ]
 }]
 
 resource sessionHostAVDAgent 'Microsoft.Compute/virtualMachines/extensions@2021-11-01' = [for i in range(0, instances): {
@@ -275,7 +287,7 @@ resource sessionHostAVDAgent 'Microsoft.Compute/virtualMachines/extensions@2021-
       configurationFunction: 'Configuration.ps1\\AddSessionHost'
       properties: {
         hostPoolName: hostPool.name
-        registrationInfoToken: hostPoolRegistration.properties.registrationInfo.token
+        registrationInfoToken: token.outputs.registrationInfoToken
       }
     }
   }
@@ -285,9 +297,12 @@ resource sessionHostAVDAgent 'Microsoft.Compute/virtualMachines/extensions@2021-
   ]
 }]
 
-resource sessionHostDCRA 'Microsoft.Insights/dataCollectionRuleAssociations@2022-06-01' =  [ for (item, i) in range(0, instances) : if (enableDcr) {
+resource sessionHostDCRA 'Microsoft.Insights/dataCollectionRuleAssociations@2022-06-01' = [for (item, i) in range(0, instances): if (enableDcr) {
   name: '${vmPrefix}-${i + currentInstances}-dcra'
   properties: {
     dataCollectionRuleId: dataCollectionRuleId
   }
+  dependsOn: [
+    vm[i]
+  ]
 }]
