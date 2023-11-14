@@ -33,13 +33,13 @@ type computeGalleryType = {
   imageGalleryVersionName: string
 }
 
-@description('Compute image gallery properties.')
+@description('(Required) - Compute image gallery properties.')
 param computeGalleryProperties computeGalleryType
 
-@description('Virtual network properies.')
+@description('(Required) - Virtual network properies.')
 param virtualNetworkProperties virtualNetworkType
 
-@description('Domain join properties. Required if enableDomainJoin is true')
+@description('(Optional) - Domain join properties. Required if enableDomainJoin is true')
 param domainJoinProperties domainJoinType?
 
 @description('Join session hosts to domain?')
@@ -56,39 +56,44 @@ param enableDcr bool = false
 
 param dataCollectionRuleId string?
 
-@description('How many session hosts should be deployed?')
+@description('(Optional) - How many session hosts should be deployed?')
 param instances int = 1
 
-@description('How many sessions hosts are already deployed?')
+@description('(Optional) - How many sessions hosts are already deployed?')
 param currentInstances int = 0
 
-@description('The name of the hostPool resource session hosts should join.')
+@description('(Required) - The name of the hostPool resource session hosts should join.')
 param hostPoolName string
 
-@description('Location for all standard resources to be deployed into.')
+@description('(Requried) - The resource group name of the hostPool.')
+param hostPoolResourceGroupName string
+
+@description('(Optional) - Location for all standard resources to be deployed into.')
 param deploymentLocation string = resourceGroup().location
+ 
+@description('(Optional) - What prefix should session host resources have.')
+param vmPrefix string = 'avd'
 
-param vmPrefix string
-
+@description('(Requried) - The vm disk type')
 @allowed([
   'Standard_LRS'
   'Premium_LRS'
 ])
 param vmDiskType string
 
-@description('What is the selected size for the virtual machine?')
+@description('(Required) - What is the selected size for the virtual machine?')
 param vmSize string
 
-@description('Tags metadata for resources')
+@description('(Optional) - Tags metadata for resources')
 param tags object?
 
-@description('Do you want to enable ephereralDisks for session hosts?')
+@description('(Optional) - Do you want to enable ephereralDisks for session hosts?')
 param ephemeralDisk bool = false
 
-@description('Name of the local administrator')
+@description('(Optional) - Name of the local administrator')
 param adminUsername string = 'avdadmin'
 
-@description('The password for the local administrator')
+@description('(Required) - The password for the local administrator')
 @secure()
 param adminPassword string
 
@@ -99,6 +104,7 @@ var expirationTime = dateTimeAdd(baseTime, 'PT48H')
 // Get the hostPool Resource
 resource hostPool 'Microsoft.DesktopVirtualization/hostPools@2023-09-05' existing = {
   name: hostPoolName
+  scope: resourceGroup(hostPoolResourceGroupName)
 }
 
 // Simply getting a token. Does not delete or modify hostPool in anyway.
