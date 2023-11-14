@@ -65,9 +65,6 @@ param currentInstances int = 0
 @description('The name of the hostPool resource session hosts should join.')
 param hostPoolName string
 
-@description('Name of resource group containing AVD HostPool')
-param hostPoolResourceGroupName string
-
 @description('Location for all standard resources to be deployed into.')
 param deploymentLocation string = resourceGroup().location
 
@@ -94,6 +91,30 @@ param adminUsername string = 'avdadmin'
 @description('The password for the local administrator')
 @secure()
 param adminPassword string
+
+param baseTime string = utcNow('u')
+
+var expirationTime = dateTimeAdd(baseTime, 'PT48H')
+
+// Get the hostPool Resource
+resource hostPool 'Microsoft.DesktopVirtualization/hostPools@2023-09-05' existing = {
+  name: hostPoolName
+}
+
+// Simply getting a token. Does not delete or modify hostPool in anyway.
+resource hostPoolRegistration 'Microsoft.DesktopVirtualization/hostPools@2023-09-05' = { 
+  name: hostPool.name
+  properties: {
+    hostPoolType: hostPool.properties.hostPoolType
+    loadBalancerType:  hostPool.properties.loadBalancerType
+    preferredAppGroupType: hostPool.properties.preferredAppGroupType
+    registrationInfo: {
+      expirationTime: expirationTime
+      token: null
+      registrationTokenOperation: 'Update'
+    }
+  }
+}
 
 resource virtualNetwork 'Microsoft.Network/virtualNetworks@2023-05-01' existing = {
   name: virtualNetworkProperties.virtualNetworkName
@@ -182,7 +203,7 @@ resource vm 'Microsoft.Compute/virtualMachines@2021-11-01' = [for i in range(0, 
   ]
 }]
 
-resource joindomain 'Microsoft.Compute/virtualMachines/extensions@2021-11-01' = [for i in range(0, instances): if (enableDomainJoin) {
+resource sessionHostDomainJoin 'Microsoft.Compute/virtualMachines/extensions@2021-11-01' = [for i in range(0, instances): if (enableDomainJoin) {
   name: '${vmPrefix}-${i + currentInstances}/joindomain'
   location: deploymentLocation
   properties: {
@@ -209,7 +230,7 @@ resource joindomain 'Microsoft.Compute/virtualMachines/extensions@2021-11-01' = 
   ]
 }]
 
-resource amaagent 'Microsoft.Compute/virtualMachines/extensions@2021-11-01' = [for i in range(0, instances): if (enableAMA) {
+resource sessionHostAzureMonitorAgent 'Microsoft.Compute/virtualMachines/extensions@2021-11-01' = [for i in range(0, instances): if (enableAMA) {
   name: '${vmPrefix}-${i + currentInstances}/ama-agent'
   location: deploymentLocation
   properties: {
@@ -224,7 +245,7 @@ resource amaagent 'Microsoft.Compute/virtualMachines/extensions@2021-11-01' = [f
   ]
 }]
 
-resource entraJoin 'Microsoft.Compute/virtualMachines/extensions@2023-07-01' = [for i in range(0, instances): if (enableEntraJoin) {
+resource sessionHostEntraJoin 'Microsoft.Compute/virtualMachines/extensions@2023-07-01' = [for i in range(0, instances): if (enableEntraJoin) {
   name: '${vmPrefix}-${i + currentInstances}/entraJoin'
   location: deploymentLocation
   properties:{
@@ -235,7 +256,7 @@ resource entraJoin 'Microsoft.Compute/virtualMachines/extensions@2023-07-01' = [
   } 
 }]
 
-resource dscextension 'Microsoft.Compute/virtualMachines/extensions@2021-11-01' = [for i in range(0, instances): {
+resource sessionHostAVDAgent 'Microsoft.Compute/virtualMachines/extensions@2021-11-01' = [for i in range(0, instances): {
   name: '${vmPrefix}-${i + currentInstances}/dscextension'
   location: deploymentLocation
   properties: {
@@ -247,18 +268,18 @@ resource dscextension 'Microsoft.Compute/virtualMachines/extensions@2021-11-01' 
       modulesUrl: 'https://wvdportalstorageblob.blob.core.windows.net/galleryartifacts/Configuration_09-08-2022.zip'
       configurationFunction: 'Configuration.ps1\\AddSessionHost'
       properties: {
-        HostPoolName: hostPoolName
-        ResourceGroup: hostPoolResourceGroupName
+        hostPoolName: hostPool.name
+        registrationInfoToken: hostPoolRegistration.properties.registrationInfo.token
       }
     }
   }
   dependsOn: [
     vm[i]
-    joindomain[i]
+    sessionHostDomainJoin[i]
   ]
 }]
 
-resource dcrAssoc 'Microsoft.Insights/dataCollectionRuleAssociations@2022-06-01' =  [ for (item, i) in range(0, instances) : if (enableDcr) {
+resource sessionHostDCRA 'Microsoft.Insights/dataCollectionRuleAssociations@2022-06-01' =  [ for (item, i) in range(0, instances) : if (enableDcr) {
   name: '${vmPrefix}-${i + currentInstances}-dcra'
   properties: {
     dataCollectionRuleId: dataCollectionRuleId
