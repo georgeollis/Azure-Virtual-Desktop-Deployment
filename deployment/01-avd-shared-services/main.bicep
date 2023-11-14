@@ -21,6 +21,11 @@ module avd_shared_services '../../modules/Microsoft.DesktopVirtualization/avd-co
   }
 }]
 
+
+output resourceGroupName string = resourceGroup().name
+output resourceGroupId string = resourceGroup().id
+output deploymentLocation string = deploymentLocation
+
 output avd_shared_services array = [for (item, index) in computeGalleryObjects: {
   computeGalleryName: avd_shared_services[index].outputs.computeGalleryName
   computeGalleryId: avd_shared_services[index].outputs.computeGalleryId

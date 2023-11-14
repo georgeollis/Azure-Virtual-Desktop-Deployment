@@ -54,7 +54,7 @@ output resourceGroupName string = resourceGroup().name
 output resourceGroupId string = resourceGroup().id
 output deploymentLocation string = deploymentLocation
 
-output serviceObjects array = [for (item, index) in serviceObjects: {
+output avd_service_objects array = [for (item, index) in serviceObjects: {
   workspaceName: avd_service_objects[index].outputs.workspaceName
   workspaceId: avd_service_objects[index].outputs.workspaceId
   hostPoolName: avd_service_objects[index].outputs.hostPoolName
