@@ -41,6 +41,9 @@ var serviceObjects = [
 var resourceGroupObject = {
   name: 'dev-avd-poc-serviceobjects-uks-rg'
   location: deploymentLocation
+  tags: {
+    POC: 'AVD'
+  }
 }
 
 resource resourceGroup 'Microsoft.Resources/resourceGroups@2023-07-01' = {

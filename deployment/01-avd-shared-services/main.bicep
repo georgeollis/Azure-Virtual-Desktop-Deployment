@@ -4,18 +4,22 @@ param deploymentLocation string = deployment().location
 
 var computeGalleryObjects = [ {
   computeGalleryObject: {
-    name: 'dev-avdpoc-uks-agc-01'
+    name: 'devavdpocuksagc01'
   }
 }]
 
 var resourceGroupObject = {
   name: 'dev-avd-poc-svcs-rg'
   location: deploymentLocation
+  tags: {
+    POC: 'AVD'
+  }
 }
 
 resource resourceGroup 'Microsoft.Resources/resourceGroups@2023-07-01' = {
   name: resourceGroupObject.name
   location: resourceGroupObject.location
+  tags: resourceGroupObject.tags
 }
 
 module avd_shared_services '../../modules/Microsoft.DesktopVirtualization/avd-compute-gallery.bicep' = [for (item, index) in computeGalleryObjects: {

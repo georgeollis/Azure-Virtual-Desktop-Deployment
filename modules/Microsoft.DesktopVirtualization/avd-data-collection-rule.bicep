@@ -101,15 +101,7 @@ param windowsEventLog windowsEventlogType = [
 ]
 
 @description('Controls the flow of data collection. Defaults to Microsoft-Perf and Microsoft-Event. AVD Optimized.')
-param dataFlows dataFlowsType = [ {
-    destinations: [
-      'workspace-01'
-    ]
-    streams: [
-      'Microsoft-Perf'
-      'Microsoft-Event'
-    ]
-  } ]
+param dataFlows dataFlowsType
 
 resource dataCollectionRule 'Microsoft.Insights/dataCollectionRules@2022-06-01' = {
   name: name
