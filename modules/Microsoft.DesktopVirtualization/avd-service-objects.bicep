@@ -77,9 +77,12 @@ param applicationGroupPropeties applicationGroupType
 @description('(Optional) - Should diagnostic settings be configured for service objects. Hostpool, workspace and application groups? Defaults to no.')
 param diagnosticSettings diagnosticSettingsType?
 
+param tags object?
+
 resource hostpool 'Microsoft.DesktopVirtualization/hostPools@2023-07-07-preview' = {
   name: hostPoolProperties.name
   location: deploymentLocation
+  tags: tags
   properties: {
     hostPoolType: hostPoolProperties.hostPoolType
     loadBalancerType: hostPoolProperties.loadBalancerType
@@ -105,6 +108,7 @@ resource hostpool 'Microsoft.DesktopVirtualization/hostPools@2023-07-07-preview'
 
 resource appg 'Microsoft.DesktopVirtualization/applicationGroups@2023-09-05' = [for applicationGroup in applicationGroupPropeties: {
   name: applicationGroup.name
+  tags: tags
   properties: {
     applicationGroupType: applicationGroup.applicationGroupType
     hostPoolArmPath: hostpool.id
@@ -117,6 +121,7 @@ resource appg 'Microsoft.DesktopVirtualization/applicationGroups@2023-09-05' = [
 resource workspace 'Microsoft.DesktopVirtualization/workspaces@2022-09-09' = {
   name: workspaceProperties.name
   location: deploymentLocation
+  tags: tags
   properties: {
     friendlyName: workspaceProperties.?friendlyName
     description: workspaceProperties.?description
