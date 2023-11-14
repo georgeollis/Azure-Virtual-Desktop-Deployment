@@ -62,9 +62,9 @@ module so '../modules/Microsoft.DesktopVirtualization/avd-service-objects.bicep'
     hostPoolProperties: service.hostPoolProperties
     applicationGroupPropeties: service.applicationGroupPropeties
     deploymentLocation: location
-    // diagnosticSettings: {
-    //   name: 'logging1'
-    //   workspaceId: '/subscriptions/baba41cf-c01d-4a55-b6c5-ca494b802be5/resourcegroups/adadawdad/providers/microsoft.operationalinsights/workspaces/log122132123'
-    // }
+    diagnosticSettings: {
+      name: 'logging1'
+      workspaceId: '/subscriptions/baba41cf-c01d-4a55-b6c5-ca494b802be5/resourcegroups/adadawdad/providers/microsoft.operationalinsights/workspaces/log122132123'
+    }
   }
 }]
