@@ -1,7 +1,6 @@
-targetScope = 'resourceGroup'
+targetScope = 'subscription'
 
-param deploymentLocation string = resourceGroup().location
-param tags object = resourceGroup().tags
+param deploymentLocation string = deployment().location
 
 var serviceObjects = [
   {
@@ -39,6 +38,17 @@ var serviceObjects = [
   }
 ]
 
+var resourceGroupObject = {
+  name: 'dev-avd-poc-serviceobjects-uks-rg'
+  location: deploymentLocation
+}
+
+resource resourceGroup 'Microsoft.Resources/resourceGroups@2023-07-01' = {
+  name: resourceGroupObject.name
+  location: resourceGroupObject.location
+}
+
+
 module avd_service_objects '../../modules/Microsoft.DesktopVirtualization/avd-service-objects.bicep' = [for (service, index) in serviceObjects: {
   name: 'deploy-avd-service-objects-${index}'
   params: {
@@ -46,12 +56,13 @@ module avd_service_objects '../../modules/Microsoft.DesktopVirtualization/avd-se
     hostPoolProperties: service.hostPoolProperties
     applicationGroupPropeties: service.applicationGroupPropeties
     deploymentLocation: deploymentLocation
-    tags: tags
+    tags: resourceGroup.tags
   }
+  scope: resourceGroup
 }]
 
-output resourceGroupName string = resourceGroup().name
-output resourceGroupId string = resourceGroup().id
+output resourceGroupName string = resourceGroup.name
+output resourceGroupId string = resourceGroup.id
 output deploymentLocation string = deploymentLocation
 
 output avd_service_objects array = [for (item, index) in serviceObjects: {
