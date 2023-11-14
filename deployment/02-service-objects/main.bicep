@@ -1,6 +1,7 @@
 targetScope = 'resourceGroup'
 
 param deploymentLocation string = resourceGroup().location
+param tags object = resourceGroup().tags
 
 var serviceObjects = [
   {
@@ -45,6 +46,7 @@ module so '../../modules/Microsoft.DesktopVirtualization/avd-service-objects.bic
     hostPoolProperties: service.hostPoolProperties
     applicationGroupPropeties: service.applicationGroupPropeties
     deploymentLocation: deploymentLocation
+    tags: tags
   }
 }]
 
