@@ -1,5 +1,14 @@
 targetScope = 'resourceGroup'
 
+type diagnosticSettingsType = {
+  name: string?
+  workspaceId: string?
+  storageAccountId: string?
+  eventHubAuthorizationRuleId: string? 
+  eventHubName: string?
+  retentionPolicy: int?
+}
+
 @sys.description('Agent update type')
 type agentUpdateType = {
   maintenanceWindows: { dayOfWeek: string?, hour: int? }[]?
@@ -62,6 +71,8 @@ param hostPoolProperties hostpoolType
 
 @sys.description('Application group object that will be assigned to the hostpool.')
 param applicationGroupPropeties applicationGroupType
+
+param diagnosticSettings diagnosticSettingsType?
 
 resource hostpool 'Microsoft.DesktopVirtualization/hostPools@2023-07-07-preview' = {
   name: hostPoolProperties.name
@@ -128,10 +139,57 @@ module apps 'avd-applications.bicep' = [ for (item, index) in applicationGroupPr
   dependsOn: appg
 }]
 
-@sys.description('The name of the resource')
-output name string = hostpool.name
-@sys.description('The resource Id.')
-output id string = hostpool.id
+resource workspaceDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if (!empty(diagnosticSettings)) {
+  name: diagnosticSettings.?name ?? 'logging'
+  scope: workspace
+  properties: {
+    eventHubAuthorizationRuleId: diagnosticSettings.?eventHubAuthorizationRuleId
+    eventHubName: diagnosticSettings.?eventHubName
+    workspaceId: diagnosticSettings.?workspaceId
+    storageAccountId: diagnosticSettings.?storageAccountId
+    logs: [
+      {
+        enabled: true
+        categoryGroup: 'allLogs'
+      }
+    ]
+  }
+}
+
+resource hostPoolDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if (!empty(diagnosticSettings)) {
+  name: diagnosticSettings.?name ?? 'logging'
+  scope: hostpool
+  properties: {
+    eventHubAuthorizationRuleId: diagnosticSettings.?eventHubAuthorizationRuleId
+    eventHubName: diagnosticSettings.?eventHubName
+    workspaceId: diagnosticSettings.?workspaceId
+    storageAccountId: diagnosticSettings.?storageAccountId
+    logs: [
+      {
+        enabled: true
+        categoryGroup: 'allLogs'
+      }
+    ]
+  }
+}
+
+resource applicationGroupDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = [for (item, index) in applicationGroupPropeties: if (!empty(diagnosticSettings)) {
+  name: diagnosticSettings.?name ?? 'logging'
+  scope: appg[index]
+  properties: {
+    eventHubAuthorizationRuleId: diagnosticSettings.?eventHubAuthorizationRuleId
+    eventHubName: diagnosticSettings.?eventHubName
+    workspaceId: diagnosticSettings.?workspaceId
+    storageAccountId: diagnosticSettings.?storageAccountId
+    logs: [
+      {
+        enabled: true
+        categoryGroup: 'allLogs'
+      }
+    ]
+  }
+}]
+
 
 output applicationGroupIds array = [for (item, index) in applicationGroupPropeties : {
   id: appg[index].id

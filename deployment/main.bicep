@@ -19,7 +19,7 @@ var serviceObjects = [
       name: 'hostppol122-po1w132'
     }
     applicationGroupPropeties: [ {
-        name: 'appg150'
+        name: 'appg1501'
         applicationGroupType: 'Desktop'
         deploymentLocation: location
         principals: [
@@ -27,7 +27,7 @@ var serviceObjects = [
         ]
       }
       {
-        name: 'app151'
+        name: 'app1511'
         applicationGroupType: 'RemoteApp'
         deploymentLocation: location
         principals: [
@@ -62,5 +62,9 @@ module so '../modules/Microsoft.DesktopVirtualization/avd-service-objects.bicep'
     hostPoolProperties: service.hostPoolProperties
     applicationGroupPropeties: service.applicationGroupPropeties
     deploymentLocation: location
+    // diagnosticSettings: {
+    //   name: 'logging1'
+    //   workspaceId: '/subscriptions/baba41cf-c01d-4a55-b6c5-ca494b802be5/resourcegroups/adadawdad/providers/microsoft.operationalinsights/workspaces/log122132123'
+    // }
   }
 }]
