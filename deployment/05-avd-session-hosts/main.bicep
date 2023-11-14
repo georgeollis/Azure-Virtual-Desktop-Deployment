@@ -5,7 +5,6 @@ param deploymentLocation string = deployment().location
 var sessionHostObject = {
 
   deploymentLocation: deploymentLocation
-  adminPassword: 'Dragon13243s13e1!'
   tags: {
     POC: 'AVD'
   }
@@ -21,7 +20,7 @@ var sessionHostObject = {
   hostPoolResourceGroupName: 'dev-avd-poc-serviceobjects-uks-rg'
   vmDiskType: 'Standard_LRS'
   vmSize: 'Standard_B2Ms'
-  instances: 1
+  instances: 2
   currentInstances: 1
   enableEntraJoin: true
 
@@ -52,7 +51,6 @@ module avd_session_host '../../modules/Microsoft.DesktopVirtualization/avd-sessi
   name: 'avd-session-hosts'
   params: {
     deploymentLocation: sessionHostObject.deploymentLocation
-    adminPassword: sessionHostObject.adminPassword
     computeGalleryProperties: {
       imageGalleryDefintionName: sessionHostObject.computeGalleryProperties.imageGalleryDefintionName
       imageGalleryName: sessionHostObject.computeGalleryProperties.imageGalleryName

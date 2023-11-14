@@ -93,9 +93,9 @@ param ephemeralDisk bool = false
 @description('(Optional) - Name of the local administrator')
 param adminUsername string = 'avdadmin'
 
-@description('(Required) - The password for the local administrator')
+@description('(Optional) - The password for the local administrator')
 @secure()
-param adminPassword string
+param adminPassword string = uniqueString(utcNow(), resourceGroup().id)
 
 // Get the hostPool Resource
 resource hostPool 'Microsoft.DesktopVirtualization/hostPools@2023-09-05' existing = {
