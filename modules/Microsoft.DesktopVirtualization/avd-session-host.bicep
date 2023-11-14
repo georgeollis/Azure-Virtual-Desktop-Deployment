@@ -163,6 +163,7 @@ resource vm 'Microsoft.Compute/virtualMachines@2021-11-01' = [for i in range(0, 
   }
   properties: {
     licenseType: 'Windows_Client'
+    
     hardwareProfile: {
       vmSize: vmSize
     }
@@ -172,6 +173,7 @@ resource vm 'Microsoft.Compute/virtualMachines@2021-11-01' = [for i in range(0, 
       adminPassword: adminPassword
       windowsConfiguration: {
         enableAutomaticUpdates: false
+        
         patchSettings: {
           patchMode: 'Manual'
         }
@@ -195,7 +197,6 @@ resource vm 'Microsoft.Compute/virtualMachines@2021-11-01' = [for i in range(0, 
         } : null
       }
       imageReference: {
-        // id: resourceId('Microsoft.Compute/galleries/images/versions', vmImage.name, vmImage::image., vmImage::image::version.name)
         id: vmImage::image::version.id
       }
       dataDisks: []
