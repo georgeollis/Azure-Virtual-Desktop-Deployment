@@ -51,6 +51,11 @@ param enableAMA bool = false
 @description('(Optional) - Should session hosts be added to Microsoft Entra ID?')
 param enableEntraJoin bool = false
 
+@description('(Optional) - Should session hosts be assosicated with a data collection rule?')
+param enableDcr bool = false
+
+param dataCollectionRuleId string?
+
 @description('How many session hosts should be deployed?')
 param instances int = 1
 
@@ -74,10 +79,13 @@ param vmPrefix string
 ])
 param vmDiskType string
 
+@description('What is the selected size for the virtual machine?')
 param vmSize string
 
+@description('Tags metadata for resources')
 param tags object?
 
+@description('Do you want to enable ephereralDisks for session hosts?')
 param ephemeralDisk bool = false
 
 @description('Name of the local administrator')
@@ -249,4 +257,11 @@ resource dscextension 'Microsoft.Compute/virtualMachines/extensions@2021-11-01' 
     vm[i]
     joindomain[i]
   ]
+}]
+
+resource dcrAssoc 'Microsoft.Insights/dataCollectionRuleAssociations@2022-06-01' =  [ for (item, i) in range(0, instances) : if (enableDcr) {
+  name: '${vmPrefix}-${i + currentInstances}-dcra'
+  properties: {
+    dataCollectionRuleId: dataCollectionRuleId
+  }
 }]
