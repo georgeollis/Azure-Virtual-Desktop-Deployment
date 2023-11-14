@@ -62,16 +62,19 @@ type applicationGroupType = {
   }[]?
 }[]
 
-@sys.description('The location for deployed resources')
+@description('(Optional) - The location of the resource being deployed. Defaults to the resource group location.')
 param deploymentLocation string = resourceGroup().location
 
+@description('(Required) - The properties of the workspace being created. One workspace will be created.')
 param workspaceProperties workspaceType
 
+@description('(Required) - The hostpool properties. One hostpool will be created.')
 param hostPoolProperties hostpoolType
 
-@sys.description('Application group object that will be assigned to the hostpool.')
+@description('(Required) - A list of applicationGroupProperties. Multiple application groups can be deployed.')
 param applicationGroupPropeties applicationGroupType
 
+@description('(Optional) - Should diagnostic settings be configured for service objects. Hostpool, workspace and application groups? Defaults to no.')
 param diagnosticSettings diagnosticSettingsType?
 
 resource hostpool 'Microsoft.DesktopVirtualization/hostPools@2023-07-07-preview' = {

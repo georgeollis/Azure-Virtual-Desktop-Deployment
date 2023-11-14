@@ -17,10 +17,13 @@ type imageDefinitionType = {
 
 }[]
 
+@description('(Required) - The name of the Azure Compute Gallery resource this image definition will be created into.')
 param computeGalleryName string
 
+@description('(Required) - The image definition being created within the Azure Compute Gallery.')
 param imageDefinitionObject imageDefinitionType
 
+@description('(Optional) - The location of the resource being deployed. Defaults to the resource group location')
 param deploymentLocation string = resourceGroup().location
 
 resource computeGallery 'Microsoft.Compute/galleries@2022-03-03' existing = {

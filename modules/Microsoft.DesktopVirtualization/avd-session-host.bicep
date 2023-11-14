@@ -69,7 +69,7 @@ param hostPoolName string
 param hostPoolResourceGroupName string
 
 @description('Location for all standard resources to be deployed into.')
-param location string = resourceGroup().location
+param deploymentLocation string = resourceGroup().location
 
 param vmPrefix string
 
@@ -107,7 +107,7 @@ resource subnet 'Microsoft.Network/virtualNetworks/subnets@2023-05-01' existing 
 
 resource nic 'Microsoft.Network/networkInterfaces@2021-05-01' = [for i in range(0, instances): {
   name: '${vmPrefix}-${i + currentInstances}-nic'
-  location: location
+  location: deploymentLocation
   tags: tags
   properties: {
     ipConfigurations: [
@@ -126,7 +126,7 @@ resource nic 'Microsoft.Network/networkInterfaces@2021-05-01' = [for i in range(
 
 resource vm 'Microsoft.Compute/virtualMachines@2021-11-01' = [for i in range(0, instances): {
   name: '${vmPrefix}-${i + currentInstances}'
-  location: location
+  location: deploymentLocation
   identity: {
     type: 'SystemAssigned'
   }
@@ -185,7 +185,7 @@ resource vm 'Microsoft.Compute/virtualMachines@2021-11-01' = [for i in range(0, 
 
 resource joindomain 'Microsoft.Compute/virtualMachines/extensions@2021-11-01' = [for i in range(0, instances): if (enableDomainJoin) {
   name: '${vmPrefix}-${i + currentInstances}/joindomain'
-  location: location
+  location: deploymentLocation
   properties: {
     publisher: 'Microsoft.Compute'
     type: 'JsonADDomainExtension'
@@ -212,7 +212,7 @@ resource joindomain 'Microsoft.Compute/virtualMachines/extensions@2021-11-01' = 
 
 resource amaagent 'Microsoft.Compute/virtualMachines/extensions@2021-11-01' = [for i in range(0, instances): if (enableAMA) {
   name: '${vmPrefix}-${i + currentInstances}/ama-agent'
-  location: location
+  location: deploymentLocation
   properties: {
     publisher: 'Microsoft.Azure.Monitor'
     type: 'AzureMonitorWindowsAgent'
@@ -227,7 +227,7 @@ resource amaagent 'Microsoft.Compute/virtualMachines/extensions@2021-11-01' = [f
 
 resource entraJoin 'Microsoft.Compute/virtualMachines/extensions@2023-07-01' = [for i in range(0, instances): if (enableEntraJoin) {
   name: '${vmPrefix}-${i + currentInstances}/entraJoin'
-  location: location
+  location: deploymentLocation
   properties:{
     publisher: 'Microsoft.Azure.ActiveDirectory'
     type: 'AADLoginForWindows'
@@ -238,7 +238,7 @@ resource entraJoin 'Microsoft.Compute/virtualMachines/extensions@2023-07-01' = [
 
 resource dscextension 'Microsoft.Compute/virtualMachines/extensions@2021-11-01' = [for i in range(0, instances): {
   name: '${vmPrefix}-${i + currentInstances}/dscextension'
-  location: location
+  location: deploymentLocation
   properties: {
     publisher: 'Microsoft.Powershell'
     type: 'DSC'

@@ -13,8 +13,10 @@ type applicationType = {
   showInPortal: bool?// Optional
 }[]
 
+@description('(Required) - The name of the application group that this application will be deployed into.')
 param applicationGroupName string
 
+@description('(Required) - List of applications to be deployed. Uses the applicationType')
 param applications applicationType
 
 resource applicationGroup 'Microsoft.DesktopVirtualization/applicationGroups@2023-09-05' existing = {

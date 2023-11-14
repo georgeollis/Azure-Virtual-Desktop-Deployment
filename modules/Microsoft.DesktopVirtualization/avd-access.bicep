@@ -1,6 +1,7 @@
 @description('List of principal ids that require access to Azure Virtual Desktop.')
 param principals array 
 
+@description('The name of the application group that access will be applied.')
 param applicationGroupName string
 
 resource applicationGroup 'Microsoft.DesktopVirtualization/applicationGroups@2023-09-05' existing = {
