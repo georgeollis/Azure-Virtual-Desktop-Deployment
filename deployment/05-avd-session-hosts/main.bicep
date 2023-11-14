@@ -3,6 +3,7 @@ targetScope = 'subscription'
 param deploymentLocation string = deployment().location
 
 var sessionHostObject = {
+  
   deploymentLocation: deploymentLocation
   adminPassword: 'burabkdbuasdubsad!s'
   tags: {
@@ -24,9 +25,9 @@ var sessionHostObject = {
   instances: 1
 
   virtualNetworkProperties: {
-    resourceGroupName: ''
-    subnetName: ''
-    virtualNetworkName: '' 
+    resourceGroupName: 'dev-avd-poc-svcs-rg'
+    subnetName: 'default'
+    virtualNetworkName: 'vm-vnet' 
   }
 
 }
