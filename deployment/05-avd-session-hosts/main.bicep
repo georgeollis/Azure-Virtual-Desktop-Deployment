@@ -60,26 +60,15 @@ resource virtualNetwork 'Microsoft.Network/virtualNetworks@2023-05-01' existing 
   }
 }
 
-resource computeGallery 'Microsoft.Compute/galleries@2022-03-03' existing = {
-  name: sessionHostObject.computeGalleryProperties.imageGalleryName
-  scope: resourceGroup(sessionHostObject.computeGalleryProperties.resourceGroup)
-  resource images 'images' existing = {
-    name: sessionHostObject.computeGalleryProperties.imageGalleryVersionName
-    resource versions 'versions@2022-03-03' existing = {
-      name: sessionHostObject.computeGalleryProperties.imageGalleryVersionName
-    }
-  }
-}
-
 module avd_session_host '../../modules/Microsoft.DesktopVirtualization/avd-session-host.bicep' = {
   name: 'avd-session-hosts'
   params: {
     deploymentLocation: sessionHostObject.deploymentLocation
     adminPassword: sessionHostObject.adminPassword
     computeGalleryProperties: {
-      imageGalleryDefintionName: computeGallery::images.name
-      imageGalleryName: computeGallery.name
-      imageGalleryVersionName: computeGallery::images::versions.name
+      imageGalleryDefintionName: sessionHostObject.computeGalleryProperties.imageGalleryDefintionName
+      imageGalleryName: sessionHostObject.computeGalleryProperties.imageGalleryName
+      imageGalleryVersionName: sessionHostObject.computeGalleryProperties.imageGalleryVersionName
       resourceGroup: sessionHostObject.computeGalleryProperties.resourceGroup
     }
     hostPoolName: hostPool.name

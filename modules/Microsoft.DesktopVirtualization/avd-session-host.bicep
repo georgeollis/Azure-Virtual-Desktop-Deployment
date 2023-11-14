@@ -126,11 +126,6 @@ resource vmImage 'Microsoft.Compute/galleries@2022-03-03' existing = {
   }
 }
 
-resource vmImageVersion 'Microsoft.Compute/galleries/images/versions@2022-03-03' existing = {
-  name: computeGalleryProperties.imageGalleryVersionName
-  parent: vmImage::image
-}
-
 resource virtualNetwork 'Microsoft.Network/virtualNetworks@2023-05-01' existing = {
   name: virtualNetworkProperties.virtualNetworkName
   scope: resourceGroup(virtualNetworkProperties.resourceGroupName)
@@ -200,7 +195,8 @@ resource vm 'Microsoft.Compute/virtualMachines@2021-11-01' = [for i in range(0, 
         } : null
       }
       imageReference: {
-        id: resourceId('Microsoft.Compute/galleries/images/versions', '${vmImage.name}/${vmImage::image.name}/${vmImage::image::version.name}')
+        // id: resourceId('Microsoft.Compute/galleries/images/versions', vmImage.name, vmImage::image., vmImage::image::version.name)
+        id: vmImage::image::version.id
       }
       dataDisks: []
     }
