@@ -163,7 +163,6 @@ resource vm 'Microsoft.Compute/virtualMachines@2021-11-01' = [for i in range(0, 
           placement: 'CacheDisk'
         } : null
       }
-
       imageReference: {
         id: '/subscriptions/${computeGalleryProperties.subscriptionId}/resourceGroups/${computeGalleryProperties.resourceGroup}/providers/Microsoft.Compute/galleries/${computeGalleryProperties.imageGalleryName}/images/${computeGalleryProperties.imageGalleryDefintionName}/versions/${computeGalleryProperties.imageGalleryVersionName}'
       }

@@ -5,6 +5,21 @@ param deploymentLocation string = deployment().location
 var computeGalleryObjects = [ {
   computeGalleryObject: {
     name: 'devavdpocuksagc01'
+    deployImageDefinition: true
+    imageDefinitionObject: [
+      {
+        name:  'AVD-Golden-Image'
+        architecture: 'x64'
+        hyperVGeneration: 'V2'
+        identifier: {
+          offer: 'AVD-Master-Image'
+          publisher: 'Gollis'
+          sku: 'AVD'
+        }
+        osState: 'Generalized'
+        osType: 'Windows'
+      }
+    ]
   }
 }]
 
@@ -30,6 +45,9 @@ module avd_shared_services '../../modules/Microsoft.DesktopVirtualization/avd-co
     }
     deploymentLocation: deploymentLocation
     tags: resourceGroup.tags
+    deployImageDefinition: item.computeGalleryObject.deployImageDefinition
+    imageDefinitionObject: item.computeGalleryObject.imageDefinitionObject
+    
   }
   scope: resourceGroup
 }]
