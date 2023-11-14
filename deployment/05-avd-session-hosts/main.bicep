@@ -15,7 +15,6 @@ var sessionHostObject = {
     imageGalleryName: 'devavdpocuksagc01'
     imageGalleryVersionName: '0.0.1' 
     resourceGroup: 'dev-avd-poc-svcs-rg'
-    // subscriptionId: subscription().subscriptionId
   }
 
   hostPoolName: 'dev-avd-poc-uks-hp-01'
@@ -23,7 +22,9 @@ var sessionHostObject = {
   vmDiskType: 'Standard_LRS'
   vmSize: 'Standard_B2Ms'
   instances: 1
+  currentInstances: 1
   enableEntraJoin: true
+
 
   virtualNetworkProperties: {
     resourceGroupName: 'dev-avd-poc-svcs-rg'
@@ -32,6 +33,7 @@ var sessionHostObject = {
   }
 
 }
+
 var resourceGroupObject = {
   name: 'dev-avd-poc-compute-uks-rg'
   location: deploymentLocation
@@ -46,20 +48,6 @@ resource avd_session_host_resourceGroup 'Microsoft.Resources/resourceGroups@2023
   tags: resourceGroupObject.tags
 }
 
-resource hostPool 'Microsoft.DesktopVirtualization/hostPools@2023-09-05' existing = {
-  name: sessionHostObject.hostPoolName
-  scope: resourceGroup(sessionHostObject.hostPoolResourceGroupName)
-}
-
-resource virtualNetwork 'Microsoft.Network/virtualNetworks@2023-05-01' existing = {
-  name: sessionHostObject.virtualNetworkProperties.virtualNetworkName
-  scope: resourceGroup(sessionHostObject.virtualNetworkProperties.resourceGroupName)
-
-  resource subnet 'subnets' existing = {
-    name: sessionHostObject.virtualNetworkProperties.subnetName
-  }
-}
-
 module avd_session_host '../../modules/Microsoft.DesktopVirtualization/avd-session-host.bicep' = {
   name: 'avd-session-hosts'
   params: {
@@ -71,12 +59,12 @@ module avd_session_host '../../modules/Microsoft.DesktopVirtualization/avd-sessi
       imageGalleryVersionName: sessionHostObject.computeGalleryProperties.imageGalleryVersionName
       resourceGroup: sessionHostObject.computeGalleryProperties.resourceGroup
     }
-    hostPoolName: hostPool.name
+    hostPoolName: sessionHostObject.hostPoolName
     hostPoolResourceGroupName: sessionHostObject.hostPoolResourceGroupName
     virtualNetworkProperties: {
       resourceGroupName: sessionHostObject.virtualNetworkProperties.resourceGroupName
-      subnetName: virtualNetwork::subnet.name
-      virtualNetworkName: virtualNetwork.name
+      subnetName: sessionHostObject.virtualNetworkProperties.subnetName
+      virtualNetworkName: sessionHostObject.virtualNetworkProperties.virtualNetworkName
     }
     vmDiskType: sessionHostObject.vmDiskType
     enableEntraJoin: sessionHostObject.enableEntraJoin
@@ -87,3 +75,4 @@ module avd_session_host '../../modules/Microsoft.DesktopVirtualization/avd-sessi
   scope: avd_session_host_resourceGroup
 }
 
+output sessionHostNames array = avd_session_host.outputs.sessionHosts

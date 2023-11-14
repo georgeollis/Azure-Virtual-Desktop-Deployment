@@ -311,3 +311,8 @@ resource sessionHostDCRA 'Microsoft.Insights/dataCollectionRuleAssociations@2022
     vm[i]
   ]
 }]
+
+output sessionHosts array = [for i in range(0, instances): {
+  virtualMachineNames: vm[i].name
+  virtualMachineids: vm[i].id
+} ]
