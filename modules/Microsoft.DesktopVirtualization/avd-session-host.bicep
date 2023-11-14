@@ -171,6 +171,7 @@ resource vm 'Microsoft.Compute/virtualMachines@2021-11-01' = [for i in range(0, 
       computerName: '${vmPrefix}-${i}'
       adminUsername: adminUsername
       adminPassword: adminPassword
+    
       windowsConfiguration: {
         enableAutomaticUpdates: false
         
@@ -208,6 +209,13 @@ resource vm 'Microsoft.Compute/virtualMachines@2021-11-01' = [for i in range(0, 
         }
       ]
     }
+
+    diagnosticsProfile: {
+      bootDiagnostics: {
+        enabled: true
+      }
+    }
+
   }
   tags: tags
   dependsOn: [
