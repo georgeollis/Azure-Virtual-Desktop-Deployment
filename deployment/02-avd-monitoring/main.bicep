@@ -79,7 +79,7 @@ var avd_monitoring_objects = {
 }
 
 var resourceGroupObject = {
-  name: 'dev-avd-poc-svcs-rg'
+  name: 'dev-avd-poc-shared-services-rg'
   location: deploymentLocation
   tags: {
     POC: 'AVD'
