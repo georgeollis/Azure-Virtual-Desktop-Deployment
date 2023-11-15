@@ -37,7 +37,7 @@ resource resourceGroup 'Microsoft.Resources/resourceGroups@2023-07-01' = {
   tags: resourceGroupObject.tags
 }
 
-module avd_shared_services '../../modules/Microsoft.DesktopVirtualization/avd-compute-gallery.bicep' = [for (item, index) in computeGalleryObjects: {
+module avd_shared_services '../../modules/avd-compute-gallery.bicep' = [for (item, index) in computeGalleryObjects: {
   name: 'avd-shared-services-${index}'
   params: {
     computeGalleryObject: {

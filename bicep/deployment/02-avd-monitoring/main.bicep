@@ -92,7 +92,7 @@ resource resourceGroup 'Microsoft.Resources/resourceGroups@2023-07-01' = {
   tags: resourceGroupObject.tags
 }
 
-module avd_monitoring_workspace '../../modules/Microsoft.DesktopVirtualization/avd-la-workspace.bicep' = {
+module avd_monitoring_workspace '../../modules/avd-la-workspace.bicep' = {
   name: 'avd-monitoring-workspace'
   params: {
     name: avd_monitoring_objects.workspaceObject.workspaceName

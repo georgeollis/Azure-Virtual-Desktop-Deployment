@@ -34,7 +34,7 @@ resource avd_storage_resource_group 'Microsoft.Resources/resourceGroups@2023-07-
   tags: resourceGroupObject.tags
 }
 
-module storageAccount '../../modules/Microsoft.DesktopVirtualization/avd-storage-account.bicep' = {
+module storageAccount '../../modules/avd-storage-account.bicep' = {
   name: 'avd-storage-account'
   params: {
     name: storageAccountObject.name
@@ -45,7 +45,7 @@ module storageAccount '../../modules/Microsoft.DesktopVirtualization/avd-storage
   scope: avd_storage_resource_group
 }
 
-module privateEndpoint '../../modules/Microsoft.DesktopVirtualization/avd-private-endpoint.bicep' = {
+module privateEndpoint '../../modules/avd-private-endpoint.bicep' = {
   scope: avd_storage_resource_group
   name: 'avd-storage-private-endpoint'
   params: {

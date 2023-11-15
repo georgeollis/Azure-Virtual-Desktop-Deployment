@@ -47,7 +47,7 @@ resource avd_session_host_resourceGroup 'Microsoft.Resources/resourceGroups@2023
   tags: resourceGroupObject.tags
 }
 
-module avd_session_host '../../modules/Microsoft.DesktopVirtualization/avd-session-host.bicep' = {
+module avd_session_host '../../modules/avd-session-host.bicep' = {
   name: 'avd-session-hosts'
   params: {
     deploymentLocation: sessionHostObject.deploymentLocation

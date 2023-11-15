@@ -53,7 +53,7 @@ resource resourceGroup 'Microsoft.Resources/resourceGroups@2023-07-01' = {
 }
 
 
-module avd_service_objects '../../modules/Microsoft.DesktopVirtualization/avd-service-objects.bicep' = [for (service, index) in serviceObjects: {
+module avd_service_objects '../../modules/avd-service-objects.bicep' = [for (service, index) in serviceObjects: {
   name: 'deploy-avd-service-objects-${index}'
   params: {
     workspaceProperties: service.workspaceProperties
