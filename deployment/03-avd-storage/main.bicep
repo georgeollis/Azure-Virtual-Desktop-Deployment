@@ -11,8 +11,8 @@ var resourceGroupObject = {
 }
 
 var privateEndpointObject =  {
-  privateDnsZoneId: '/subscriptions/baba41cf-c01d-4a55-b6c5-ca494b802be5/resourceGroups/Azure-Compute-Gallery-Demo/providers/Microsoft.Network/privateDnsZones/privatelink.file.core.windows.net'
-  subnetId: '/subscriptions/baba41cf-c01d-4a55-b6c5-ca494b802be5/resourceGroups/Azure-Compute-Gallery-Demo/providers/Microsoft.Network/virtualNetworks/addasdas/subnets/default'
+  privateDnsZoneId: '/subscriptions/baba41cf-c01d-4a55-b6c5-ca494b802be5/resourceGroups/adadawdad/providers/Microsoft.Network/privateDnsZones/privatelink.file.core.windows.net'
+  subnetId: '/subscriptions/baba41cf-c01d-4a55-b6c5-ca494b802be5/resourceGroups/adadawdad/providers/Microsoft.Network/virtualNetworks/test/subnets/default'
   groupIds: [
     'file'
   ]
@@ -40,6 +40,7 @@ module storageAccount '../../modules/Microsoft.DesktopVirtualization/avd-storage
     name: storageAccountObject.name
     delpoymentLocation: deploymentLocation
     fileShares: storageAccountObject.fileShares
+    tags: resourceGroupObject.tags
   }
   scope: avd_storage_resource_group
 }

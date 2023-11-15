@@ -16,10 +16,13 @@ param name string
 @description('(Optional) - The sku of the storage account. Defaults to LRS.')
 param sku string = 'Premium_LRS'
 
+param tags object?
+
 //// Azure Files Storage Account for FsLogix Profiles
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
   name: name
+  tags: tags
   location: delpoymentLocation
   sku: {
     name: sku

@@ -49,6 +49,7 @@ var resourceGroupObject = {
 resource resourceGroup 'Microsoft.Resources/resourceGroups@2023-07-01' = {
   name: resourceGroupObject.name
   location: resourceGroupObject.location
+  tags: resourceGroupObject.tags
 }
 
 
@@ -59,7 +60,7 @@ module avd_service_objects '../../modules/Microsoft.DesktopVirtualization/avd-se
     hostPoolProperties: service.hostPoolProperties
     applicationGroupPropeties: service.applicationGroupPropeties
     deploymentLocation: deploymentLocation
-    tags: resourceGroup.tags
+    tags: resourceGroupObject.tags
   }
   scope: resourceGroup
 }]

@@ -77,6 +77,7 @@ param applicationGroupPropeties applicationGroupType
 @description('(Optional) - Should diagnostic settings be configured for service objects. Hostpool, workspace and application groups? Defaults to no.')
 param diagnosticSettings diagnosticSettingsType?
 
+@description('(Optional - Tags to be added on resources.)')
 param tags object?
 
 resource hostpool 'Microsoft.DesktopVirtualization/hostPools@2023-07-07-preview' = {
