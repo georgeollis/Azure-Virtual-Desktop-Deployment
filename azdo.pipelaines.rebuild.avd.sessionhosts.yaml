@@ -1,0 +1,119 @@
+parameters:
+
+- name: environment
+  displayName: Environment
+  type: string
+  values:
+  - avd-poc
+
+- name: subscriptionId
+  displayName: 'The subscription Id that resources will be deployed into.'
+  type: string
+
+- name: location
+  displayName: 'Location of resources to be delpoyed.'
+
+- name: svcConnection
+  type: string
+  displayName: 'Service connection to use for resource deployments.'
+
+- name: agentPool
+  type: object
+  default: 
+    vmImage: ubuntu-latest
+
+stages:
+
+- stage: DeleteSessionHosts
+  pool: 
+   ${{ parameters.agentPool }}
+
+  variables:
+    deploymentName: 'deployment_avd_session_hosts_${{parameters.environment}}'
+
+  jobs:  
+  - job: Rebuild
+    
+    steps:
+
+    - task: AzurePowerShell@5
+      displayName: Delete session hosts
+      inputs:
+        azureSubscription: ${{parameters.svcConnection}}
+        azurePowerShellVersion: LatestVersion
+        scriptLocation: 'inlineScript'
+        scriptType: 'pscore'
+        inline: |
+          $sessionHosts = ((Get-AzDeployment -Name "${{variables.deploymentName}}" | select -ExpandProperty outputs) `
+          | ConvertTo-Json -Depth 70 | ConvertFrom-Json | Select -ExpandProperty sessionHostNames).value.virtualMachineids
+
+          if ($sessionHosts) {
+
+            $sessionHosts | Foreach-Object {
+    
+            $virtualMachineResource = Get-AzVm -ResourceId $_ -ErrorAction SilentlyContinue
+
+            if ($virtualMachineResource) {
+               $nicResource = $virtualMachineResource.NetworkProfile.NetworkInterfaces.Id
+                $osDiskResource = $virtualMachineResource.StorageProfile.OsDisk.ManagedDisk.Id
+                  Remove-AzVm -Id $virtualMachineResource.id -ForceDeletion $true -Force
+                  Remove-AzResource -ResourceId $nicResource -Force
+                  Remove-AzResource -ResourceId $osDiskResource -Force
+               }
+             }
+
+             $virtualMachineResource = $null
+
+          }
+    
+    - task: AzurePowerShell@5
+      displayName: Delete old session host metadata
+      inputs:
+        azureSubscription: ${{parameters.svcConnection}}
+        azurePowerShellVersion: LatestVersion
+        scriptLocation: 'inlineScript'
+        scriptType: 'pscore'
+        inline: |
+
+          $deployment = ((Get-AzDeployment -Name "${{variables.deploymentName}}" | select -ExpandProperty outputs) | ConvertTo-Json -Depth 70 | ConvertFrom-Json)   
+
+          $HOST_POOL_NAME = $deployment.hostPoolName.value
+          $HOST_POOL_RESOURCE_GROUP_NAME = $deployment.hostPoolResourceGroupName.value
+
+          Write-Output $HOST_POOL_NAME
+          Write-Output $HOST_POOL_RESOURCE_GROUP_NAME
+
+          Start-Sleep -Seconds 60
+
+          Install-Module Az.Accounts -Force
+          Install-Module Az.DesktopVirtualization -Force
+
+          $AllSessions = Get-AzWvdUserSession -HostPoolName $HOST_POOL_NAME -ResourceGroupName $HOST_POOL_RESOURCE_GROUP_NAME
+ 
+          if ($AllSessions) {
+          
+              foreach ($session in $AllSessions) {
+                  
+                  $userId = $session.Name.Split("/")[2]
+                  $sessionHostName = $session.Name.Split("/")[1] 
+                  
+                  Write-Output "Clearing session $userId on session host $sessionHostName"
+          
+                  Remove-AzWvdUserSession `
+                  -HostPoolName $HOST_POOL_NAME `
+                  -ResourceGroupName $HOST_POOL_RESOURCE_GROUP_NAME `
+                  -Id $userId `
+                  -SessionHostName $sessionHostName `
+                  -Force }}
+
+          $sessions = Get-AzWvdSessionHost `
+          -ResourceGroupName $HOST_POOL_RESOURCE_GROUP_NAME `
+          -HostPoolName $HOST_POOL_NAME | select name,@{name="status";e={$_.Status}} | where {$_.status -eq "Unavailable"} 
+
+          Write-Output $sessions
+
+          if ($sessions) {
+              $sessions | foreach-object {
+                $sessionHostName = ($_.Name).Split("/")[1]
+                Write-Host "Removing $sessionHostName from hostpool"
+                Remove-AzWvdSessionHost -HostPoolName $HOST_POOL_NAME -Name $sessionHostName -ResourceGroupName $HOST_POOL_RESOURCE_GROUP_NAME }}
