@@ -1,0 +1,232 @@
+parameters:
+- name: deployment
+  displayName: 'Which layer of Azure Virtual Desktop will be deployed?'
+  type: string
+  values:
+  - avd_shared_services
+  - avd_monitoring
+  - avd_storage
+  - avd_session_hosts
+
+- name: environment
+  displayName: Environment
+  type: string
+  values:
+  - avd-poc
+
+- name: subscriptionId
+  displayName: 'The subscription Id that resources will be deployed into.'
+  type: string
+
+- name: location
+  displayName: 'Location of resources to be delpoyed.'
+
+- name: svcConnection
+  type: string
+  displayName: 'Service connection to use for resource deployments.'
+
+- name: agentPool
+  type: object
+  default: 
+    vmImage: ubuntu-latest
+
+- name: deleteLayer
+  type: boolean
+  default: false
+
+stages:
+
+- stage: lint
+  displayName: 'AVD lint and determine layer'
+  condition: and(succeeded(), eq('${{ parameters.deleteLayer }}', false))
+  pool: 
+   ${{ parameters.agentPool }}
+  variables:
+    templateFileName: 'main.bicep'
+    buildName: 'main.json'
+    buildFolder: '$(Build.ArtifactStagingDirectory)/build'
+    downloadFolder: '$(Pipeline.Workspace)'
+    scriptDirectory: bicep/main/landing-zone/avd-lz/deployments/.azdo/pipelines/scripts
+    deploymentName: 'deployment_${{parameters.deployment}}_${{parameters.environment}}'
+
+  jobs:  
+  - job: lnl
+    displayName: 'AVD Pre-Layer'
+
+    steps:
+    - checkout: self
+    - pwsh: | 
+        Write-Output "The selected layer to deploy ${{parameters.deployment}}"
+        $deployment = ./avd_core_switch_dir.ps1 -deployment "${{parameters.deployment}}"
+
+        if ($deployment) { 
+            echo "##vso[task.setvariable variable=dir;IsOutput=true]$deployment"
+        } else {
+            throw "Unable to determine deployment layer. Please review"
+            Exit 1
+        }
+      name: layer
+      displayName: 'Switch deployment layer'
+      workingDirectory: ${{variables.scriptDirectory}}
+  - job: build
+    displayName: AVD Build
+    dependsOn: lnl
+    variables:
+      workingDirectory: $[ dependencies.lnl.outputs['layer.dir']]
+      
+    steps:
+
+    - pwsh: |
+        mkdir ${{variables.buildFolder}}
+        az bicep build --file ${{variables.templateFileName}} --outdir ${{variables.buildFolder}}
+      displayName: 'is valid Bicep'
+      workingDirectory: $(workingDirectory)
+    - task: PublishPipelineArtifact@1
+      displayName: Publish Pipeline Artifact
+      inputs:
+        path: ${{variables.buildFolder}}
+        artifact: deploy
+
+- stage: plan
+  displayName: Validate AVD deployment 
+  condition: and(succeeded(), eq('${{ parameters.deleteLayer }}', false))
+  dependsOn: lint
+  pool: 
+   ${{ parameters.agentPool }}
+  
+  variables:
+    templateFileName: 'main.bicep'
+    buildName: 'main.json'
+    buildFolder: '$(Build.ArtifactStagingDirectory)/build'
+    downloadFolder: '$(Pipeline.Workspace)'
+    scriptDirectory: bicep/main/landing-zone/avd-lz/deployments/.azdo/scripts
+    deploymentName: 'deployment_${{parameters.deployment}}_${{parameters.environment}}'
+
+  jobs:  
+  - job: lnl
+    displayName: Plan AVD Deployment
+    
+    steps:
+    - checkout: self
+    - task: DownloadPipelineArtifact@2
+      inputs:
+        buildType: 'current'
+        name: deploy
+        targetPath: '${{variables.downloadFolder}}'
+    - task: AzureCLI@2
+      displayName: validate changes with What-If
+      inputs:
+        azureSubscription: ${{parameters.svcConnection}}
+        scriptLocation: 'inlineScript'
+        scriptType: 'pscore'
+        inlineScript: |
+            az account set --subscription ${{parameters.subscriptionId}} | Out-Null
+            az deployment sub what-if `
+              --name '${{variables.deploymentName}}' `
+              --location '${{parameters.location}}' `
+              --subscription '${{parameters.subscriptionId}}' `
+              --template-file '$(Pipeline.Workspace)/deploy/${{variables.buildName}}'
+
+- stage: deploy
+  displayName: AVD Deployment
+  condition: and(succeeded(), eq('${{ parameters.deleteLayer }}', false))
+  dependsOn: plan
+  pool: 
+   ${{ parameters.agentPool }}
+
+  variables:
+    templateFileName: 'main.bicep'
+    buildName: 'main.json'
+    buildFolder: '$(Build.ArtifactStagingDirectory)/build'
+    downloadFolder: '$(Pipeline.Workspace)'
+    scriptDirectory: bicep/main/landing-zone/avd-lz/deployments/.azdo/scripts
+    deploymentName: 'deployment_${{parameters.deployment}}_${{parameters.environment}}'
+
+  jobs: 
+  - deployment: 'deploy'
+    displayName: 'Deploy AVD'
+    environment: ${{parameters.environment}}
+    continueOnError: false
+    strategy:
+     runOnce:
+      deploy:
+          steps:
+
+            - checkout: self
+            - task: DownloadPipelineArtifact@2
+              inputs:
+                buildType: 'current'
+                name: deploy
+                targetPath: '${{variables.downloadFolder}}'
+            - task: AzureCLI@2
+              displayName: Deploy to Subscription
+              inputs:
+                azureSubscription: ${{ parameters.svcConnection }}
+                scriptType: 'pscore'
+                scriptLocation: 'inlineScript'
+                inlineScript: |
+                    az deployment sub create `
+                    --name '${{ variables.deploymentName }}' `
+                    --location '${{ parameters.location }}' `
+                    --subscription '${{ parameters.subscriptionId }}' `
+                    --template-file '$(Pipeline.Workspace)/deploy/${{variables.buildName}}' 
+
+# - stage: delete
+#   displayName: AVD Destroy
+#   condition: eq('${{ parameters.deleteLayer }}', true)
+#   pool: 
+#    ${{ parameters.agentPool }}
+
+#   variables:
+#     templateFileName: 'main.bicep'
+#     buildName: 'main.json'
+#     buildFolder: '$(Build.ArtifactStagingDirectory)/build'
+#     downloadFolder: '$(Pipeline.Workspace)'
+#     scriptDirectory: bicep/main/landing-zone/avd-lz/deployments/.azdo/scripts
+#     deploymentName: 'deployment_${{parameters.deployment}}_${{parameters.environment}}'
+
+#   jobs: 
+#   - deployment: 'Plan_deletion'
+#     displayName: 'AVD Plan Delete'
+#     environment: ${{parameters.environment}}
+#     continueOnError: false
+#     strategy:
+#      runOnce:
+#       deploy:
+#           steps:
+           
+#             - checkout: self
+#             - task: AzureCLI@2
+#               displayName: Azure Delete resources overview
+#               inputs:
+#                 azureSubscription: ${{ parameters.svcConnection }}
+#                 scriptType: 'pscore'
+#                 scriptLocation: 'inlineScript'
+#                 inlineScript: |
+#                   az account set --subscription ${{parameters.subscriptionId}} | Out-Null
+
+#                   $stack = az stack sub show --name '${{ variables.deploymentName }}'
+#                   $stack = $stack | convertfrom-json | Select-Object -ExpandProperty resources | Select Id
+#                   Write-Output "IMPORTANT: The following resources will be deleted if approved."
+#                   $stack.Foreach({"$($_)"}) 
+
+#   - deployment: 'DeleteResources' 
+#     displayName: 'AVD Delete resources'
+#     environment: ${{parameters.environment}}
+#     continueOnError: false
+#     strategy:
+#      runOnce:
+#       deploy:
+#           steps:
+           
+#             - checkout: self
+      
+#             - task: AzureCLI@2
+#               displayName: Delete Azure Resources
+#               inputs:
+#                 azureSubscription: ${{ parameters.svcConnection}}
+#                 scriptType: 'pscore'
+#                 scriptLocation: 'inlineScript'
+#                 inlineScript: |
+#                   az account set --subscription ${{parameters.subscriptionId}} | Out-Null
+#                   az stack sub delete --name '${{ variables.deploymentName }}' --delete-all --yes
