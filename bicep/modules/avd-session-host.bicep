@@ -59,9 +59,6 @@ param dataCollectionRuleId string?
 @description('(Optional) - How many session hosts should be deployed?')
 param instances int = 1
 
-@description('(Optional) - How many sessions hosts are already deployed?')
-param currentInstances int = 0
-
 @description('(Required) - The name of the hostPool resource session hosts should join.')
 param hostPoolName string
 
@@ -93,9 +90,9 @@ param ephemeralDisk bool = false
 @description('(Optional) - Name of the local administrator')
 param adminUsername string = 'avdadmin'
 
-@description('(Optional) - The password for the local administrator')
+@description('(Required) - The password for the local administrator')
 @secure()
-param adminPassword string = uniqueString(utcNow(), resourceGroup().id)
+param adminPassword string 
 
 // Get the hostPool Resource
 resource hostPool 'Microsoft.DesktopVirtualization/hostPools@2023-09-05' existing = {
@@ -137,7 +134,7 @@ resource subnet 'Microsoft.Network/virtualNetworks/subnets@2023-05-01' existing 
 }
 
 resource nic 'Microsoft.Network/networkInterfaces@2021-05-01' = [for i in range(0, instances): {
-  name: '${vmPrefix}-${i + currentInstances}-nic'
+  name: '${vmPrefix}-${i}-nic'
   location: deploymentLocation
   tags: tags
   properties: {
@@ -156,7 +153,7 @@ resource nic 'Microsoft.Network/networkInterfaces@2021-05-01' = [for i in range(
 }]
 
 resource vm 'Microsoft.Compute/virtualMachines@2021-11-01' = [for i in range(0, instances): {
-  name: '${vmPrefix}-${i + currentInstances}'
+  name: '${vmPrefix}-${i}'
   location: deploymentLocation
   identity: {
     type: 'SystemAssigned'
@@ -224,7 +221,7 @@ resource vm 'Microsoft.Compute/virtualMachines@2021-11-01' = [for i in range(0, 
 }]
 
 resource sessionHostDomainJoin 'Microsoft.Compute/virtualMachines/extensions@2021-11-01' = [for i in range(0, instances): if (enableDomainJoin) {
-  name: '${vmPrefix}-${i + currentInstances}/joindomain'
+  name: '${vmPrefix}-${i}/joindomain'
   location: deploymentLocation
   properties: {
     publisher: 'Microsoft.Compute'
@@ -251,7 +248,7 @@ resource sessionHostDomainJoin 'Microsoft.Compute/virtualMachines/extensions@202
 }]
 
 resource sessionHostAzureMonitorAgent 'Microsoft.Compute/virtualMachines/extensions@2021-11-01' = [for i in range(0, instances): if (enableAMA) {
-  name: '${vmPrefix}-${i + currentInstances}/ama-agent'
+  name: '${vmPrefix}-${i}/ama-agent'
   location: deploymentLocation
   properties: {
     publisher: 'Microsoft.Azure.Monitor'
@@ -266,7 +263,7 @@ resource sessionHostAzureMonitorAgent 'Microsoft.Compute/virtualMachines/extensi
 }]
 
 resource sessionHostEntraJoin 'Microsoft.Compute/virtualMachines/extensions@2023-07-01' = [for i in range(0, instances): if (enableEntraJoin) {
-  name: '${vmPrefix}-${i + currentInstances}/entraJoin'
+  name: '${vmPrefix}-${i}/entraJoin'
   location: deploymentLocation
   properties: {
     publisher: 'Microsoft.Azure.ActiveDirectory'
@@ -280,7 +277,7 @@ resource sessionHostEntraJoin 'Microsoft.Compute/virtualMachines/extensions@2023
 }]
 
 resource sessionHostAVDAgent 'Microsoft.Compute/virtualMachines/extensions@2021-11-01' = [for i in range(0, instances): {
-  name: '${vmPrefix}-${i + currentInstances}/dscextension'
+  name: '${vmPrefix}-${i}/dscextension'
   location: deploymentLocation
   properties: {
     publisher: 'Microsoft.Powershell'
@@ -303,7 +300,7 @@ resource sessionHostAVDAgent 'Microsoft.Compute/virtualMachines/extensions@2021-
 }]
 
 resource sessionHostDCRA 'Microsoft.Insights/dataCollectionRuleAssociations@2022-06-01' = [for (item, i) in range(0, instances): if (enableDcr) {
-  name: '${vmPrefix}-${i + currentInstances}-dcra'
+  name: '${vmPrefix}-${i}-dcra'
   properties: {
     dataCollectionRuleId: dataCollectionRuleId
   }
@@ -316,3 +313,7 @@ output sessionHosts array = [for i in range(0, instances): {
   virtualMachineNames: vm[i].name
   virtualMachineids: vm[i].id
 } ]
+
+output hostPoolName string = hostPool.name
+output hostPoolId string = hostPool.id
+output hostPoolResourceGroupName string = hostPoolResourceGroupName
